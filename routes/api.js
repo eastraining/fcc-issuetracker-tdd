@@ -2,6 +2,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 mongoose.set('useFindAndModify', false);
+mongoose.set('returnOriginal', false);
 const DB = process.env['MONGO_URI'];
 const ISSUE_OBJ_SCHEMA = [
   'issue_title',
@@ -20,12 +21,15 @@ module.exports = function (app) {
   const issueSchema = new mongoose.Schema({
     issue_title: { type: String, required: true },
     issue_text: { type: String, required: true },
-    created_on: { type: Date, required: true },
-    updated_on: { type: Date, required: true },
     created_by: { type: String, required: true },
     assigned_to: String,
     open: { type: Boolean, required: true },
     status_text: String
+  }, { 
+    timestamps: { 
+      createdAt: 'created_on',
+      updatedAt: 'updated_on'
+    } 
   });
 
   app.route('/api/issues/:project')
@@ -38,6 +42,9 @@ module.exports = function (app) {
           queries[x] = req.query[x];
         }
       });
+      if (req.query._id) {
+        queries._id = req.query._id;
+      };
       let Issue = mongoose.model(project, issueSchema);
       Issue.find(queries, function(err, docs) {
         if (err) {
@@ -54,8 +61,6 @@ module.exports = function (app) {
       let issue = new Issue({
         issue_title: req.body.issue_title,
         issue_text: req.body.issue_text,
-        created_on: req.body.created_on || Date.now(),
-        updated_on: req.body.updated_on || Date.now(),
         created_by: req.body.created_by,
         assigned_to: req.body.assigned_to || "",
         open: req.body.open || true,
@@ -83,19 +88,17 @@ module.exports = function (app) {
       
       let update = {};
       ISSUE_OBJ_SCHEMA.forEach(x => {
-        if (x in req.body) {
+        if (x in req.body && x !== ("created_on" || "updated_on")) {
           update[x] = req.body[x];
         }
       });
       if (Object.keys(update).length === 0) {
         res.status(200).json({ error: "no update field(s) sent", _id: _id });
         return;
-      } else {
-        update.updated_on = Date.now();
-      }
+      } 
 
       let Issue = mongoose.model(project, issueSchema);
-      Issue.findByIdAndUpdate(_id, update, { new: true }, function(err, doc) {
+      Issue.findByIdAndUpdate(_id, update, function(err, doc) {
         if (err) {
           res.status(200).json({ error: "could not update", _id: _id });
         } else {
