@@ -38,7 +38,7 @@ module.exports = function (app) {
           queries[x] = req.query[x];
         }
       });
-      const Issue = mongoose.model(project, issueSchema);
+      let Issue = mongoose.model(project, issueSchema);
       Issue.find(queries, function(err, docs) {
         if (err) {
           res.status(200).json({ error: 'unable to locate project or issues' });
@@ -50,8 +50,8 @@ module.exports = function (app) {
     
     .post(function (req, res){
       const project = req.params.project;
-      const Issue = mongoose.model(project, issueSchema);
-      const issue = new Issue({
+      let Issue = mongoose.model(project, issueSchema);
+      let issue = new Issue({
         issue_title: req.body.issue_title,
         issue_text: req.body.issue_text,
         created_on: req.body.created_on || new Date(),
@@ -92,7 +92,7 @@ module.exports = function (app) {
         return;
       }
 
-      const Issue = mongoose.model(project, issueSchema);
+      let Issue = mongoose.model(project, issueSchema);
       Issue.findByIdAndUpdate(_id, update, function(err, doc) {
         if (err) {
           res.status(200).json({ error: "could not update", _id: _id });
@@ -112,7 +112,7 @@ module.exports = function (app) {
         _id = req.body._id;
       }
 
-      const Issue = mongoose.model(project, issueSchema);
+      let Issue = mongoose.model(project, issueSchema);
       Issue.findByIdAndDelete(_id, function(err, doc) {
         if (err) {
           res.status(200).json({ error: "could not delete", _id: _id });
