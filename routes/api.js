@@ -54,8 +54,8 @@ module.exports = function (app) {
       let issue = new Issue({
         issue_title: req.body.issue_title,
         issue_text: req.body.issue_text,
-        created_on: req.body.created_on || new Date(),
-        updated_on: req.body.updated_on || new Date(),
+        created_on: req.body.created_on || Date.now(),
+        updated_on: req.body.updated_on || Date.now(),
         created_by: req.body.created_by,
         assigned_to: req.body.assigned_to || "",
         open: req.body.open || true,
@@ -90,14 +90,20 @@ module.exports = function (app) {
       if (Object.keys(update).length === 0) {
         res.status(200).json({ error: "no update field(s) sent", _id: _id });
         return;
+      } else {
+        update.updated_on = Date.now();
       }
 
       let Issue = mongoose.model(project, issueSchema);
-      Issue.findByIdAndUpdate(_id, update, function(err, doc) {
+      Issue.findByIdAndUpdate(_id, update, { new: true }, function(err, doc) {
         if (err) {
           res.status(200).json({ error: "could not update", _id: _id });
         } else {
-          res.status(200).json({ result: "successfully updated", _id: doc._id });
+          if (!doc) {
+            res.status(200).json({ error: "could not update", _id: _id });
+          } else {
+            res.status(200).json({ result: "successfully updated", _id: doc._id });
+          }
         }
       })
     })
@@ -117,7 +123,11 @@ module.exports = function (app) {
         if (err) {
           res.status(200).json({ error: "could not delete", _id: _id });
         } else {
-          res.status(200).json({ result: "successfully deleted", _id: doc._id });
+          if (!doc) {
+            res.status(200).json({ error: "could not delete", _id: _id });
+          } else {
+            res.status(200).json({ result: "successfully deleted", _id: doc._id });
+          }
         }
       })
     });
