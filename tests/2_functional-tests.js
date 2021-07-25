@@ -20,6 +20,7 @@ const TEST_OBJ_KEYS = [
 ];
 
 let TEST_ID;
+let DEL_ID;
 const FAKE_ID = '12345rfds';
 
 chai.use(chaiHttp);
@@ -30,7 +31,7 @@ suite('Functional Tests', function() {
     test('Create an issue with every field completed', function(done) {
       chai
       .request(server)
-      .post(`api/issues/${PROJ_NAME}`)
+      .post(`/api/issues/${PROJ_NAME}`)
       .send({
         "issue_title": `Issue ${CURR_TEST}`,
         "issue_text": "Test issue created",
@@ -50,6 +51,7 @@ suite('Functional Tests', function() {
         assert.isDefined(res.body.updated_on);
         assert.isDefined(res.body._id);
         assert.equal(res.body.open, true);
+        DEL_ID = res.body._id;
         done();
       });
     });
@@ -57,18 +59,18 @@ suite('Functional Tests', function() {
     test('Create an issue with required fields only', function(done) {
       chai
       .request(server)
-      .post(`api/issues/${PROJ_NAME}`)
+      .post(`/api/issues/${PROJ_NAME}`)
       .send({
         "issue_title": `Issue ${CURR_TEST + 1}`,
         "issue_text": "Test issue created",
-        "created_by": USER_JANE
+        "created_by": USER_JOHN
       })
       .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
-        assert.equal(res.body.issue_title, `Issue ${CURR_TEST}`);
+        assert.equal(res.body.issue_title, `Issue ${CURR_TEST + 1}`);
         assert.equal(res.body.issue_text, "Test issue created");
-        assert.equal(res.body.created_by, USER_JANE);
+        assert.equal(res.body.created_by, USER_JOHN);
         assert.equal(res.body.assigned_to, "");
         assert.equal(res.body.status_text, "");
         assert.isDefined(res.body.created_on);
@@ -83,7 +85,7 @@ suite('Functional Tests', function() {
     test('Create an issue with missing required fields', function(done) {
       chai
       .request(server)
-      .post(`api/issues/${PROJ_NAME}`)
+      .post(`/api/issues/${PROJ_NAME}`)
       .send({
         "issue_title": `Issue ${CURR_TEST + 2}`,
         "issue_text": "Test issue created"
@@ -102,7 +104,7 @@ suite('Functional Tests', function() {
       chai
       .request(server)
       .get(`/api/issues/${PROJ_NAME}`)
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         res.body.forEach(x => assert.containsAllKeys(x, TEST_OBJ_KEYS));
@@ -114,7 +116,7 @@ suite('Functional Tests', function() {
       chai
       .request(server)
       .get(`/api/issues/${PROJ_NAME}?assigned_to=${USER_JANE}`)
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         res.body.forEach(x => assert.containsAllKeys(x, TEST_OBJ_KEYS));
@@ -126,12 +128,12 @@ suite('Functional Tests', function() {
     test('View issues on a project with multiple filters', function(done) {
       chai
       .request(server)
-      .get(`/api/issues/${PROJ_NAME}?assigned_to=${USER_JANE}&open=true`)
-      .end(function(res, err) {
+      .get(`/api/issues/${PROJ_NAME}?created_by=${USER_JOHN}&open=true`)
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         res.body.forEach(x => assert.containsAllKeys(x, TEST_OBJ_KEYS));
-        res.body.forEach(x => assert.propertyVal(x, "assigned_to", USER_JANE));
+        res.body.forEach(x => assert.propertyVal(x, "created_by", USER_JOHN));
         res.body.forEach(x => assert.propertyVal(x, "open", true));
         done();
       });
@@ -143,11 +145,11 @@ suite('Functional Tests', function() {
       chai
       .request(server)
       .put(`/api/issues/${PROJ_NAME}`)
-      .send({
-        "_id": TEST_ID,
-        "assigned_to": USER_JOHN
+      .send({ 
+        "_id": TEST_ID, 
+        "assigned_to": USER_JOHN 
       })
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         assert.equal(res.body.result, "successfully updated");
@@ -165,7 +167,7 @@ suite('Functional Tests', function() {
         "status_text": "runaround implemented",
         "issue_text": "Test issue runaround tweak"
       })
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         assert.equal(res.body.result, "successfully updated");
@@ -182,7 +184,7 @@ suite('Functional Tests', function() {
         "status_text": "new runaround implemented",
         "issue_text": "New test issue runaround tweak"
       })
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         assert.equal(res.body.error, "missing _id");
@@ -197,7 +199,7 @@ suite('Functional Tests', function() {
       .send({
         "_id": TEST_ID
       })
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         assert.equal(res.body.error, "no update field(s) sent");
@@ -214,7 +216,7 @@ suite('Functional Tests', function() {
         "_id": FAKE_ID,
         "status_text": "runaround implemented"
       })
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         assert.equal(res.body.error, "could not update");
@@ -229,12 +231,12 @@ suite('Functional Tests', function() {
       chai
       .request(server)
       .delete(`/api/issues/${PROJ_NAME}`)
-      .send({ "_id": TEST_ID })
-      .end(function(res, err) {
+      .send({ "_id": DEL_ID })
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
         assert.equal(res.body.result, "successfully deleted");
-        assert.equal(res.body._id, TEST_ID);
+        assert.equal(res.body._id, DEL_ID);
         done();
       });
     });
@@ -244,10 +246,10 @@ suite('Functional Tests', function() {
       .request(server)
       .delete(`/api/issues/${PROJ_NAME}`)
       .send({})
-      .end(function(res, err) {
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
-        assert.equal(res.body.result, "missing _id");
+        assert.equal(res.body.error, "missing _id");
         done();
       });
     });
@@ -256,12 +258,12 @@ suite('Functional Tests', function() {
       chai
       .request(server)
       .delete(`/api/issues/${PROJ_NAME}`)
-      .send({ "_id": TEST_ID })
-      .end(function(res, err) {
+      .send({ "_id": FAKE_ID })
+      .end(function(err, res) {
         assert.equal(res.status, 200);
         assert.equal(res.type, "application/json");
-        assert.equal(res.body.result, "could not delete");
-        assert.equal(res.body._id, TEST_ID);
+        assert.equal(res.body.error, "could not delete");
+        assert.equal(res.body._id, FAKE_ID);
         done();
       });
     });
